@@ -5,6 +5,7 @@ var game = {
 	assets: [
 		{ name: "ship", type: "image", src: "assets/ship.png" },
 		{ name: "planet", type: "image", src: "assets/planet.png" },
+		{ name: "pad", type: "image", src: "assets/landing_pad.png" },
 	],
 	onLoad: function () {
 		if (!me.video.init(640, 480, {wrapper: "screen", scale: 1})) {

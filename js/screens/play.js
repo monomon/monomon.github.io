@@ -11,9 +11,9 @@ game.PlayScreen = me.Stage.extend({
 			height: 200
 		}), 2);
 		me.game.world.addChild(new game.LandingPad(
-			(me.game.viewport.width - 100)/2,
-			me.game.viewport.height - 100,
-			{width: 100, height: 100}
+			me.Math.randomFloat(0, (me.game.viewport.width - 60)),
+			me.game.viewport.height - 151,
+			{width: 61, height: 151}
 		), 5);
 		// me.game.world.addChild(this.HUD);
 		me.game.world.addChild(me.pool.pull("player", 50, 50, {}), 200);

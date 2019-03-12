@@ -36,18 +36,11 @@ game.PlanetBackground = me.Entity.extend({
 
 game.LandingPad = me.Entity.extend({
 	init: function(x, y, settings) {
+		settings.image = "pad";
 		this._super(me.Entity, "init", [x, y, settings]);
-		this.body.shapes = [(new me.Rect(0, 0, this.width, this.height)).toPolygon()];
+		this.body.shapes = [(new me.Rect(0, 51, this.width, this.height)).toPolygon()];
 		this.body.gravity.set(0, 0);
 		this.body.collisionType = me.collision.types.WORLD_SHAPE;
 		this.body.name = "LandingPad";
-	},
-	draw: function(renderer, region) {
-		this._super(me.Entity, 'draw', [renderer, region]);
-		
-		var currentColor = renderer.getColor();
-		renderer.setColor(landingPadColor);
-		renderer.fillRect(0, 0, this.width, this.height);
-		renderer.setColor(currentColor);
 	}
 });

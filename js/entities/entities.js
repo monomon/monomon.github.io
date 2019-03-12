@@ -5,7 +5,7 @@ game.ShipRenderable = me.Container.extend({
 	init: function(x, y, w, h) {
 		this._super(me.Container, 'init', [x, y, w, h]);
 
-		var emitter = new me.ParticleEmitter(0, 8, {
+		this.thrusters = this.addChild(new me.ParticleEmitter(0, 8, {
 			angle: 1.5*Math.PI,
 			angleVariation: 0.05*Math.PI,
 			totalParticles: 100,
@@ -13,10 +13,8 @@ game.ShipRenderable = me.Container.extend({
 			frequency: 50,
 			minLife: 500,
 			maxLife: 3000,
-			width: w,
-			height: 0
-		});
-		this.thrusters = this.addChild(emitter, 10);
+		}), 10);
+		this.addChild(this.thrusters.container, 10);
 		this.sprite = this.addChild(new me.Sprite(0, 0, {
 			image: "ship",
 			framewidth: w,
@@ -42,6 +40,7 @@ game.Ship = me.Entity.extend({
 		this.body.collisionType = me.collision.types.PLAYER_OBJECT;
 		this.body.bounce = 0;
 		this.body.shapes = [(new me.Rect(0, 0, this.width, this.height)).toPolygon()];
+		this.body.name = "Ship";
 		this.body.updateBounds();
 		this.renderable = new game.ShipRenderable(this.width/2, this.height/2, this.width, this.height);
 
@@ -51,6 +50,11 @@ game.Ship = me.Entity.extend({
 			me.game.viewport.width-this.width,
 			me.game.viewport.height-this.height
 		);
+
+		this.body.respondToCollision = function (response) {
+			this.vel.set(0, 0);
+			this.force.set(0, 0);
+		};
 	},
 	update: function(dt) {
 		this._super(me.Entity, "update", [dt]);
@@ -72,24 +76,66 @@ game.Ship = me.Entity.extend({
 			this.body.force.y += thrustersStrength;
 		}
 
-		me.collision.check(this);
 		this.body.update(dt);
-		this.renderable.thrusters.angle = Math.atan2(this.body.force.y, -this.body.force.x);
-		this.renderable.thrusters.totalParticles = this.body.force.distance(zeroVector)*1000;
+		me.collision.check(this);
+		if (this.renderable.thrusters) {
+			this.renderable.thrusters.angle = Math.atan2(this.body.force.y, -this.body.force.x);
+			this.renderable.thrusters.totalParticles = this.body.force.distance(zeroVector)*1000;
+		}
 		this.pos.x = me.Math.clamp(this.pos.x, this.spriteBounds.left, this.spriteBounds.right);
 		this.pos.y = me.Math.clamp(this.pos.y, this.spriteBounds.top, this.spriteBounds.bottom);
-
-		// if (this.pos.x == this.spriteBounds.left) {
-		// 	this.body.force.x = 0;
-		// }
-		// if (this.pos.y == this.spriteBounds.bottom) {
-		// 	this.body.force.set(0, 0);
-		// 	this.body.vel.set(0, 0);
-		// }
+		if (this.pos.x == this.spriteBounds.left) {
+			this.body.force.x = 0;
+		}
+		if (this.pos.y == this.spriteBounds.bottom) {
+			this.body.force.set(0, 0);
+			this.body.vel.set(0, 0);
+		}
 		return true;
 	},
 	onCollision: function(response, other) {
-		console.log(other.body.name);
-		return true;
+		if (other.body.name == "LandingPad") {
+			if (this.body.vel.distance(zeroVector) > 3) {
+				this.alive = false;
+				this.renderable = new me.ParticleEmitter(0, 8, {
+					angle: 0.5*Math.PI,
+					angleVariation: 0.2*Math.PI,
+					totalParticles: 100,
+					speed: 3,
+					frequency: 50,
+					minLife: 500,
+					maxLife: 3000,
+					gravity: 3
+				}).container;
+				this.renderable.pos.z = 10;
+				this.renderable._emitter.burstParticles();
+			}
+			this.body.force.set(0, 0);
+			this.body.vel.set(0, 0);
+			return true;
+		} else if (other.body.name == "PlanetSurface") {
+			if (this.alive) {
+				console.log("boom");
+				this.alive = false;
+				this.renderable = new me.ParticleEmitter(0, 8, {
+					angle: 0.5*Math.PI,
+					angleVariation: 0.2*Math.PI,
+					totalParticles: 100,
+					speed: 3,
+					frequency: 50,
+					minLife: 500,
+					maxLife: 3000,
+					gravity: 3
+				}).container;
+				this.renderable._emitter.burstParticles();
+
+			}
+			this.body.force.set(0, 0);
+			this.body.vel.set(0, 0);
+			
+			return true;
+		}
+
+		return false;
 	}
 });
