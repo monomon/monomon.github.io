@@ -1,5 +1,6 @@
 var thrustersStrength = 0.5;
 var zeroVector = new me.Vector2d(0, 0);
+var cargoSize = 3;
 
 game.ShipRenderable = me.Container.extend({
 	init: function(x, y, w, h) {
@@ -43,6 +44,7 @@ game.Ship = me.Entity.extend({
 		this.body.name = "Ship";
 		this.body.updateBounds();
 		this.renderable = new game.ShipRenderable(this.width/2, this.height/2, this.width, this.height);
+		this.cargo = 0;
 
 		this.spriteBounds = new me.Rect(
 			0,
@@ -94,48 +96,80 @@ game.Ship = me.Entity.extend({
 		return true;
 	},
 	onCollision: function(response, other) {
-		if (other.body.name == "LandingPad") {
-			if (this.body.vel.distance(zeroVector) > 3) {
-				this.alive = false;
-				this.renderable = new me.ParticleEmitter(0, 8, {
-					angle: 0.5*Math.PI,
-					angleVariation: 0.2*Math.PI,
-					totalParticles: 100,
-					speed: 3,
-					frequency: 50,
-					minLife: 500,
-					maxLife: 3000,
-					gravity: 3
-				}).container;
-				this.renderable.pos.z = 10;
-				this.renderable._emitter.burstParticles();
-			}
-			this.body.force.set(0, 0);
-			this.body.vel.set(0, 0);
-			return true;
-		} else if (other.body.name == "PlanetSurface") {
-			if (this.alive) {
-				console.log("boom");
-				this.alive = false;
-				this.renderable = new me.ParticleEmitter(0, 8, {
-					angle: 0.5*Math.PI,
-					angleVariation: 0.2*Math.PI,
-					totalParticles: 100,
-					speed: 3,
-					frequency: 50,
-					minLife: 500,
-					maxLife: 3000,
-					gravity: 3
-				}).container;
-				this.renderable._emitter.burstParticles();
+		switch (other.body.collisionType) {
+			case me.collision.types.WORLD_SHAPE:
+				if (other.body.name == "LandingPad") {
+					if (this.body.vel.distance(zeroVector) > 3) {
+						this.alive = false;
+						this.renderable = createExplosionEmitter();
+						this.renderable.pos.z = 10;
+						this.renderable._emitter.burstParticles();
+					} else {
+						game.data.score += this.cargo;
+					}
+					this.cargo = 0;
+					this.body.force.set(0, 0);
+					this.body.vel.set(0, 0);
+					return true;
+				} else if (other.body.name == "PlanetSurface") {
+					if (this.alive) {
+						console.log("boom");
+						this.alive = false;
+						this.cargo = 0;
+						this.renderable = createExplosionEmitter();
+						this.renderable.pos.z = 10;
+						this.renderable._emitter.burstParticles();
 
-			}
-			this.body.force.set(0, 0);
-			this.body.vel.set(0, 0);
-			
-			return true;
+					}
+					this.body.force.set(0, 0);
+					this.body.vel.set(0, 0);
+
+					return true;
+				}
+
+				break;
+
+			case me.collision.types.COLLECTABLE_OBJECT:
+				if (other.body.name == "Oscar" && this.cargo < cargoSize && this.alive) {
+					// collect, update gui
+					this.cargo += 1;
+					me.game.world.removeChild(other);
+				}
+				break;
 		}
 
 		return false;
 	}
 });
+
+game.Oscar = me.Entity.extend({
+	init: function(x, y, settings) {
+		this._super(me.Entity, 'init', [x, y, {
+			width: 15,
+			height: 40,
+			image: 'oscar'
+		}]);
+
+		this.body.name = "Oscar";
+		this.body.gravity.set(0, 0.05);
+		this.body.setMaxVelocity(5, 5);
+		this.body.collisionType = me.collision.types.COLLECTABLE_OBJECT;
+	},
+	update: function(dt) {
+		this.body.update(dt);
+		return true;
+	}
+});
+
+function createExplosionEmitter() {
+	return new me.ParticleEmitter(0, 8, {
+		angle: 0.5*Math.PI,
+		angleVariation: 0.5*Math.PI,
+		totalParticles: 200,
+		speed: 3.5,
+		minLife: 300,
+		maxLife: 3000,
+		gravity: 0.05,
+		image: me.loader.getImage("explosion"),
+	}).container;
+}
