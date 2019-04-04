@@ -1,6 +1,7 @@
 var thrustersStrength = 0.5;
 var zeroVector = new me.Vector2d(0, 0);
 var cargoSize = 3;
+var maxFuel = 400;
 
 game.ShipRenderable = me.Container.extend({
 	init: function(x, y, w, h) {
@@ -45,6 +46,7 @@ game.Ship = me.Entity.extend({
 		this.body.updateBounds();
 		this.renderable = new game.ShipRenderable(this.width/2, this.height/2, this.width, this.height);
 		this.cargo = 0;
+		this.fuel = maxFuel;
 
 		this.spriteBounds = new me.Rect(
 			0,
@@ -62,20 +64,24 @@ game.Ship = me.Entity.extend({
 		this._super(me.Entity, "update", [dt]);
 		this.body.force.set(0, 0);
 		
-		if (me.input.isKeyPressed("left")) {
-			this.body.force.x -= thrustersStrength;
-		}
+		if (this.fuel > 0 && this.alive) {
+			if (me.input.isKeyPressed("left")) {
+				this.body.force.x -= thrustersStrength;
+			}
 
-		if (me.input.isKeyPressed("right")) {
-			this.body.force.x += thrustersStrength;
-		}
+			if (me.input.isKeyPressed("right")) {
+				this.body.force.x += thrustersStrength;
+			}
 
-		if (me.input.isKeyPressed("up")) {
-			this.body.force.y -= thrustersStrength;
-		}
+			if (me.input.isKeyPressed("up")) {
+				this.body.force.y -= thrustersStrength;
+			}
 
-		if (me.input.isKeyPressed("down")) {
-			this.body.force.y += thrustersStrength;
+			if (me.input.isKeyPressed("down")) {
+				this.body.force.y += thrustersStrength;
+			}
+			// expend fuel
+			this.fuel -= this.body.force.distance(zeroVector);
 		}
 
 		this.body.update(dt);
@@ -93,6 +99,7 @@ game.Ship = me.Entity.extend({
 			this.body.force.set(0, 0);
 			this.body.vel.set(0, 0);
 		}
+
 		return true;
 	},
 	onCollision: function(response, other) {
